@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+// python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. chat_service.proto
+
+package chat;
+
+// Define Chat Service & Message Types
+
+service ChatService {
+  rpc Login (LoginRequest) returns (Response) {}
+  rpc Register (RegisterRequest) returns (Response) {}
+  rpc Delete (DeleteRequest) returns (Response) {}
+  rpc SendMessage (SendRequest) returns (Response) {}
+  rpc ReceiveMessage (User) returns (stream ChatMessage) {}
+  rpc GetUsers (Empty) returns (stream User) {}
+
+  // Inner server communication
+  rpc SendHeartbeat () returns () {}
+  rpc ReceiveHeartbeat () returns () {} 
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message DeleteRequest {
+  string username = 1;
+}
+
+message SendRequest {
+  string sender = 1;
+  string recipient = 2;
+  string content = 3;
+}
+
+message Response {
+  bool success = 1;
+  string message = 2;
+}
+
+message Empty {}
+
+message ChatMessage {
+  string sender = 1;
+  string content = 2;
+}
+
+message User {
+  string username = 1;
+}

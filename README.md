@@ -5,7 +5,6 @@ Victor Goncalves & Emeka Ezike
 [Engineering Notebook](https://docs.google.com/document/d/1S5sMQA5DNpH07CbEVKX_twklYyqPWQBLZ0j0jc64Uks/edit?usp=sharing)
 
 
-
 ## Installation
 
 1. Simply clone this repository
