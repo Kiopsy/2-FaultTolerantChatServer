@@ -13,7 +13,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
     def __init__(self, id, silent = False):
         self.MACHINE_ID = id
         self.SILENT = silent
-        self.primary = -1
+        self.primary = -1 
         self.connected = False
 
         self.HOST = HOST # change later
@@ -22,7 +22,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         self.PEER_PORTS : dict[int, str] = {50050: HOST, 50051: HOST, 50052: HOST} # change "HOST" when we want to use other devices
         del self.PEER_PORTS[self.PORT]
 
-        self.peer_alive : dict[int, bool] = {} # change "HOST" when we want to use other devices
+        self.peer_alive = {}
 
         self.peer_stubs : dict[int, chat_service_pb2_grpc.ChatServiceStub] = {}
 
@@ -48,7 +48,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
         self.sprint("Connected")
         return self.connected
-    
+
     def leaderElection(self):
         leader = float("inf")
         for port, alive in list(self.peer_alive.items()) + [(self.PORT, True)]:
@@ -60,23 +60,19 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
     
     def receiveHeartbeat(self):
         self.leaderElection()
-        
         while True:
             time.sleep(HEARTBEAT_RATE)
             for port, stub in self.peer_stubs.items():
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
-                    self.peer_alive[response.port] = True
+                    self.peer_alive[port] = True
                     self.sprint(f"Heartbeat received from port {port}")
                 except:
                     self.peer_alive[port] = False
                     if self.primary == port: # if primary just died
                         self.leaderElection()
                     self.sprint(f"Heartbeat not received from port {port}")
-
+    
     def RequestHeartbeat(self, request, context):
-        super().ReceiveHeartbeat(request, context)
-        return chat_service_pb2.HeartbeatResponse(port=self.PORT, primary=self.IS_PRIMARY)
-
-
-
+        # super().ReceiveHeartbeat(request, context)
+        return chat_service_pb2.HeartbeatResponse(port=self.PORT)
