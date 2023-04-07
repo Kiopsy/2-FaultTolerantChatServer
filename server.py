@@ -35,12 +35,13 @@ if __name__ == '__main__':
     for process in processes:
         process.start()
 
-    for process in processes:
-        process.join()
+    # for process in processes:
+    #     process.join()
 
     print("Three servers created using multiprocessing.")
 
-    # time.sleep(15)
-    # # Kill the first process
-    # processes[0].terminate()
-    # print('first process killed')
+    time.sleep(5)
+    # Kill the first process
+    processes[0].terminate()
+    for i in range(10):
+        print('first process killed')

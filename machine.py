@@ -51,7 +51,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
     def leaderElection(self):
         leader = float("inf")
-        for port, alive in list(self.peer_alive.items()) + [(self.PORT, True)]:
+        for port, alive in list(list(self.peer_alive.items()) + [(self.PORT, True)]):
             if alive:
                 leader = min(leader, port)
 
@@ -65,7 +65,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             for port, stub in self.peer_stubs.items():
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
-                    self.peer_alive[port] = True
+                    self.peer_alive[response.port] = True
                     self.sprint(f"Heartbeat received from port {port}")
                 except:
                     self.peer_alive[port] = False
