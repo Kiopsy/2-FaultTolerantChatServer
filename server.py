@@ -19,7 +19,6 @@ def serve(id):
     time.sleep(3)
     machine.connect()
     machine.heartbeat_thread.start()
-
     server.wait_for_termination()
 
 
