@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63hat_service.proto\x12\x04\x63hat\"\x07\n\x05\x45mpty\"!\n\x11HeartbeatResponse\x12\x0c\n\x04port\x18\x01 \x01(\x03\x32I\n\x0b\x43hatService\x12:\n\x10RequestHeartbeat\x12\x0b.chat.Empty\x1a\x17.chat.HeartbeatResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63hat_service.proto\x12\x04\x63hat\"\x07\n\x05\x45mpty\"2\n\x11HeartbeatResponse\x12\x0c\n\x04port\x18\x01 \x01(\x03\x12\x0f\n\x07primary\x18\x02 \x01(\x08\"-\n\rCommitRequest\x12\x0e\n\x06\x63ommit\x18\x01 \x01(\t\x12\x0c\n\x04line\x18\x02 \x01(\x03\"\x1d\n\nCommitVote\x12\x0f\n\x07\x61pprove\x18\x01 \x01(\x08\x32\xb2\x01\n\x0b\x43hatService\x12:\n\x10RequestHeartbeat\x12\x0b.chat.Empty\x1a\x17.chat.HeartbeatResponse\"\x00\x12\x38\n\rProposeCommit\x12\x13.chat.CommitRequest\x1a\x10.chat.CommitVote\"\x00\x12-\n\nVoteResult\x12\x10.chat.CommitVote\x1a\x0b.chat.Empty\"\x00\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'chat_service_pb2', globals())
@@ -23,7 +23,11 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _EMPTY._serialized_start=28
   _EMPTY._serialized_end=35
   _HEARTBEATRESPONSE._serialized_start=37
-  _HEARTBEATRESPONSE._serialized_end=70
-  _CHATSERVICE._serialized_start=72
-  _CHATSERVICE._serialized_end=145
+  _HEARTBEATRESPONSE._serialized_end=87
+  _COMMITREQUEST._serialized_start=89
+  _COMMITREQUEST._serialized_end=134
+  _COMMITVOTE._serialized_start=136
+  _COMMITVOTE._serialized_end=165
+  _CHATSERVICE._serialized_start=168
+  _CHATSERVICE._serialized_end=346
 # @@protoc_insertion_point(module_scope)

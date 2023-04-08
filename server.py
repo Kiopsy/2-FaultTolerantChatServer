@@ -18,7 +18,8 @@ def serve(id):
 
     time.sleep(3)
     machine.connect()
-    machine.receiveHeartbeat()
+    machine.heartbeat_thread.start()
+
     server.wait_for_termination()
 
 
@@ -40,8 +41,8 @@ if __name__ == '__main__':
 
     print("Three servers created using multiprocessing.")
 
-    time.sleep(5)
-    # Kill the first process
-    processes[0].terminate()
-    for i in range(10):
-        print('first process killed')
+    # time.sleep(5)
+    # # Kill the first process
+    # processes[0].terminate()
+    # for i in range(10):
+    #     print('first process killed')

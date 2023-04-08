@@ -6,8 +6,8 @@ package chat;
 
 service ChatService {
   rpc RequestHeartbeat (Empty) returns (HeartbeatResponse) {}
-//   rpc ReceiveMessage (User) returns (stream ChatMessage) {}
-//   rpc GetUsers (Empty) returns (stream User) {}
+  rpc ProposeCommit (CommitRequest) returns (CommitVote) {}
+  rpc VoteResult (CommitVote) returns (Empty) {}
 }
 
 message Empty {}
@@ -15,6 +15,17 @@ message Empty {}
 message HeartbeatResponse {
   int64 port = 1;
   bool primary = 2;
+}
+
+message CommitRequest {
+  string commit = 1;
+  int64 line = 2;
+}
+
+message CommitVote {
+  bool approve = 1;
+  string commit = 2;
+  int64 line = 3;
 }
 
 
