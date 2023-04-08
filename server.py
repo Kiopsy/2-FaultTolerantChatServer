@@ -19,11 +19,13 @@ def serve(id):
     time.sleep(3)
     machine.connect()
     machine.heartbeat_thread.start()
+    if id == 1:
+        time.sleep(3)
+        machine.sendCommitProposal(commit = "idk", line = 1)
     server.wait_for_termination()
 
 
 if __name__ == '__main__':
-
     NUM_SERVERS = 3
     processes: list[multiprocessing.Process] = []
     

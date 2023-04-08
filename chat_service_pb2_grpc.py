@@ -24,10 +24,15 @@ class ChatServiceStub(object):
                 request_serializer=chat__service__pb2.CommitRequest.SerializeToString,
                 response_deserializer=chat__service__pb2.CommitVote.FromString,
                 )
-        self.VoteResult = channel.unary_unary(
-                '/chat.ChatService/VoteResult',
+        self.SendVoteResult = channel.unary_unary(
+                '/chat.ChatService/SendVoteResult',
                 request_serializer=chat__service__pb2.CommitVote.SerializeToString,
                 response_deserializer=chat__service__pb2.Empty.FromString,
+                )
+        self.Addition = channel.unary_unary(
+                '/chat.ChatService/Addition',
+                request_serializer=chat__service__pb2.TwoNumbers.SerializeToString,
+                response_deserializer=chat__service__pb2.Sum.FromString,
                 )
 
 
@@ -46,7 +51,13 @@ class ChatServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def VoteResult(self, request, context):
+    def SendVoteResult(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Addition(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -65,10 +76,15 @@ def add_ChatServiceServicer_to_server(servicer, server):
                     request_deserializer=chat__service__pb2.CommitRequest.FromString,
                     response_serializer=chat__service__pb2.CommitVote.SerializeToString,
             ),
-            'VoteResult': grpc.unary_unary_rpc_method_handler(
-                    servicer.VoteResult,
+            'SendVoteResult': grpc.unary_unary_rpc_method_handler(
+                    servicer.SendVoteResult,
                     request_deserializer=chat__service__pb2.CommitVote.FromString,
                     response_serializer=chat__service__pb2.Empty.SerializeToString,
+            ),
+            'Addition': grpc.unary_unary_rpc_method_handler(
+                    servicer.Addition,
+                    request_deserializer=chat__service__pb2.TwoNumbers.FromString,
+                    response_serializer=chat__service__pb2.Sum.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -115,7 +131,7 @@ class ChatService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def VoteResult(request,
+    def SendVoteResult(request,
             target,
             options=(),
             channel_credentials=None,
@@ -125,8 +141,25 @@ class ChatService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/chat.ChatService/VoteResult',
+        return grpc.experimental.unary_unary(request, target, '/chat.ChatService/SendVoteResult',
             chat__service__pb2.CommitVote.SerializeToString,
             chat__service__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Addition(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/chat.ChatService/Addition',
+            chat__service__pb2.TwoNumbers.SerializeToString,
+            chat__service__pb2.Sum.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

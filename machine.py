@@ -4,6 +4,8 @@ import chat_service_pb2 as chat_service_pb2
 import chat_service_pb2_grpc as chat_service_pb2_grpc
 import time
 import threading
+import queue
+from atom import Counter
 
 LOGS_DIR = "logs"
 HOST = "localhost"
@@ -34,9 +36,14 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             os.makedirs(LOGS_DIR)
         self.log_file = open(f"{LOGS_DIR}/machine{self.MACHINE_ID}.log", "w")
 
-    def sprint(self, body, end = "\n"):
+        # Voting
+        self.proposal_queue = queue.Queue()
+        self.proposals_count = Counter()
+        self.in_voting = False
+
+    def sprint(self, *args, end = "\n"):
         if not self.SILENT:
-            print(f"Machine {self.MACHINE_ID}: {body}", end = end)
+            print(f"Machine {self.MACHINE_ID}: {' '.join(str(x) for x in args)}", end = end)
 
     def connect(self):
         if not self.connected:
@@ -77,5 +84,69 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
                     self.sprint(f"Heartbeat not received from port {port}")
     
     def RequestHeartbeat(self, request, context):
-        # super().ReceiveHeartbeat(request, context)
         return chat_service_pb2.HeartbeatResponse(port=self.PORT)
+    
+    def handleProposals(self):
+        # Thread to handle proposals
+        while True:
+            if self.in_voting == True or self.proposal_queue.qsize() == 0:
+                continue
+
+            self.sendCommitProposal()
+
+    # def voting_procedure(func):
+    #     def wrapper(*args, **kwargs):
+    #         self = args[0]
+    #         func(*args, **kwargs)
+
+    #     return wrapper
+    
+    def sendCommitProposal(self, commit, line):
+        self.in_voting = True
+
+        approved = True
+        living_stubs = lambda: [self.peer_stubs[port] for port in self.peer_alive if self.peer_alive[port]]
+
+        for stub in living_stubs():
+            req = chat_service_pb2.CommitRequest(commit = commit, line = line)
+            response : chat_service_pb2.CommitVote = stub.ProposeCommit(req)
+            approved &= response.approve
+
+        for stub in living_stubs():
+            vote = chat_service_pb2.CommitVote(commit = commit, approve = approved, line = line)
+            stub.SendVoteResult(vote)
+
+        if approved:
+            # add commit
+            self.sprint(f"Added commit {commit} on line {line}")
+        else:
+            self.sprint("Rejected commit")
+
+        self.in_voting = False
+        return approved
+
+    def writeToLog(self, commit, line):
+        self.log_file.write(commit)
+        nums = commit.split(';')
+
+    def ProposeCommit(self, request, context):
+        self.in_voting = True
+
+        approved = request.line >= 0#len(self.log_file)
+        return chat_service_pb2.CommitVote(approve = approved)
+    
+    def SendVoteResult(self, request, context):
+        self.in_voting = True
+
+        if request.approve:
+            # add commit
+            commit, line = request.commit, request.line
+            self.sprint(f"Added commit {commit} on line {line}")
+        else:
+            self.sprint("Rejected commit")
+
+        self.is_voting = False
+        return chat_service_pb2.Empty()
+    
+    def Addition(self, request, context):
+        return chat_service_pb2.Sum(sum = request.a + request.b)
