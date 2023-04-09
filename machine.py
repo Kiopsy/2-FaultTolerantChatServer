@@ -11,6 +11,19 @@ LOGS_DIR = "logs"
 HOST = "localhost"
 HEARTBEAT_RATE = 1
 
+# class ExceptionBlocker:
+#     def __init__(self, stub):
+#         self.stub = stub
+        
+#     def __getattr__(self, name):
+#         method = getattr(self.stub, name)
+#         def wrapper(*args, **kwargs):
+#             try:
+#                 return method(*args, **kwargs)
+#             except grpc.RpcError as e:
+#                 print(f"Error calling {name}: {e}")
+#         return wrapper
+
 class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
     def __init__(self, id, silent = False):
@@ -35,10 +48,10 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         if not os.path.exists(LOGS_DIR):
             os.makedirs(LOGS_DIR)
         self.log_file = open(f"{LOGS_DIR}/machine{self.MACHINE_ID}.log", "w")
+        self.log_dict = dict()
+
 
         # Voting
-        self.proposal_queue = queue.Queue()
-        self.proposals_count = Counter()
         self.in_voting = False
 
     def sprint(self, *args, end = "\n"):
@@ -59,17 +72,17 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         self.sprint("Connected")
         return self.connected
 
-    def leaderElection(self):
-        leader = float("inf")
-        for port, alive in list(list(self.peer_alive.items()) + [(self.PORT, True)]):
-            if alive:
-                leader = min(leader, port)
+    # def leaderElection(self):
+    #     leader = float("inf")
+    #     for port, alive in list(list(self.peer_alive.items()) + [(self.PORT, True)]):
+    #         if alive:
+    #             leader = min(leader, port)
 
-        self.primary = leader
-        self.sprint(f"New primary: {self.primary}")
+    #     self.primary = leader
+    #     self.sprint(f"New primary: {self.primary}")
     
     def receiveHeartbeat(self):
-        self.leaderElection()
+        # self.leaderElection()
         while True:
             time.sleep(HEARTBEAT_RATE)
             for port, stub in self.peer_stubs.items():
@@ -79,8 +92,8 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
                     self.sprint(f"Heartbeat received from port {port}")
                 except:
                     self.peer_alive[port] = False
-                    if self.primary == port: # if primary just died
-                        self.leaderElection()
+                    # if self.primary == port: # if primary just died
+                    #     self.leaderElection()
                     self.sprint(f"Heartbeat not received from port {port}")
     
     def RequestHeartbeat(self, request, context):
@@ -94,15 +107,25 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
             self.sendCommitProposal()
 
-    # def voting_procedure(func):
-    #     def wrapper(*args, **kwargs):
-    #         self = args[0]
-    #         func(*args, **kwargs)
+    def poll_while_voting(func):
+        def wrapper(*args, **kwargs):
+            self = args[0]
 
-    #     return wrapper
+            while self.in_voting:
+                time.sleep(0.1)
+                self.sprint("waiting")
+
+            func(*args, **kwargs)
+
+        return wrapper
     
-    def sendCommitProposal(self, commit, line):
+    @poll_while_voting
+    def sendCommitProposal(self, commit, line = None):
         self.in_voting = True
+
+        if line == None:
+            with open(f"{LOGS_DIR}/machine{self.MACHINE_ID}.log", "r") as f:
+                line = len(f.readlines()) + 1
 
         approved = True
         living_stubs = lambda: [self.peer_stubs[port] for port in self.peer_alive if self.peer_alive[port]]
@@ -119,6 +142,8 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         if approved:
             # add commit
             self.sprint(f"Added commit {commit} on line {line}")
+            self.log_file.write(commit + '\n')
+            self.log_file.flush()
         else:
             self.sprint("Rejected commit")
 
@@ -126,13 +151,15 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         return approved
 
     def writeToLog(self, commit, line):
-        self.log_file.write(commit)
+        self.log_file.write(commit + '\n')
         nums = commit.split(';')
+        self.log_file.flush()
 
     def ProposeCommit(self, request, context):
         self.in_voting = True
 
-        approved = request.line >= 0#len(self.log_file)
+        with open(f"{LOGS_DIR}/machine{self.MACHINE_ID}.log", "r") as f:
+            approved = request.line > len(f.readlines())
         return chat_service_pb2.CommitVote(approve = approved)
     
     def SendVoteResult(self, request, context):
@@ -142,6 +169,8 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             # add commit
             commit, line = request.commit, request.line
             self.sprint(f"Added commit {commit} on line {line}")
+            self.log_file.write(commit + '\n')
+            self.log_file.flush()
         else:
             self.sprint("Rejected commit")
 

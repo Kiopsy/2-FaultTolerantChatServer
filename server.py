@@ -5,6 +5,7 @@ import chat_service_pb2_grpc as chat_service_pb2_grpc
 from machine import Machine
 import multiprocessing
 import time
+import random
 
 def serve(id):
     machine = Machine(id)
@@ -19,9 +20,10 @@ def serve(id):
     time.sleep(3)
     machine.connect()
     machine.heartbeat_thread.start()
-    if id == 1:
-        time.sleep(3)
-        machine.sendCommitProposal(commit = "idk", line = 1)
+    for i in range(5):
+        num = random.randint(1,3)
+        time.sleep(num)
+        machine.sendCommitProposal(commit = f"{machine.MACHINE_ID}: {i} -- {num}", line = 1)
     server.wait_for_termination()
 
 
