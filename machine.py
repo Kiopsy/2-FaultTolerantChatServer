@@ -40,6 +40,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         # Voting
         self.seen_ballots = ThreadSafeSet()
 
+    # Function for printing from within a machine
     def sprint(self, *args, end = "\n"):
         if not self.SILENT:
             print(f"Machine {self.MACHINE_ID}: {' '.join(str(x) for x in args)}", end = end)
@@ -77,6 +78,18 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         self.log_file.flush()
 
         # update db to be like the log file OR use binary sent data to be the new db
+    
+    def Alive(self, request, context):
+        if self.primary_port == self.PORT:
+            with open(self.LOG_FILE_NAME, 'r') as file:
+                text_data = file.read()
+            return chat_service_pb2.ReviveInfo(
+                primary_port = self.primary_port, 
+                commit_log = text_data, 
+                db_bytes = bytes(),
+                updates = True)
+        else:
+            return chat_service_pb2.ReviveInfo(updates = False)
     
     # HEARTBEAT
 
@@ -162,19 +175,6 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             self.sprint("Rejected commit")
 
         return chat_service_pb2.Empty()
-    
-
-    def Alive(self, request, context):
-        if self.primary_port == self.PORT:
-            with open(self.LOG_FILE_NAME, 'r') as file:
-                text_data = file.read()
-            return chat_service_pb2.ReviveInfo(
-                primary_port = self.primary_port, 
-                commit_log = text_data, 
-                db_bytes = bytes(),
-                updates = True)
-        else:
-            return chat_service_pb2.ReviveInfo(updates = False)
 
     # CLIENT FUNCTIONS
     def connection_required(func):
@@ -183,15 +183,17 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             if not self.connected:
                 context.set_details("Server currently disconnected.")
                 context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
-                return None
+                return grpc.RpcMethodHandler()
             
-            func(self, request, context)
+            return func(self, request, context)
         
         return wrapper
     
+    @connection_required
     def Ping(self, request, context):
         return chat_service_pb2.Empty()
 
+    @connection_required
     def Addition(self, request, context):
 
         self.sprint("Received addition request")
