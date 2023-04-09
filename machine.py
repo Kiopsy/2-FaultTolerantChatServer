@@ -113,7 +113,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
     def sendCommitProposal(self, commit):
 
-        ballot_id = max(self.seen_ballots if self.seen_ballots else [0]) + 1
+        ballot_id = self.seen_ballots.max() + 1
         self.seen_ballots.add(ballot_id)
         
         approved = True
