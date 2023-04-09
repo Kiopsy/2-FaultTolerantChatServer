@@ -14,10 +14,15 @@ class ChatServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Ping = channel.unary_unary(
-                '/chat.ChatService/Ping',
+        self.ClientPing = channel.unary_unary(
+                '/chat.ChatService/ClientPing',
                 request_serializer=chat__service__pb2.Empty.SerializeToString,
                 response_deserializer=chat__service__pb2.Empty.FromString,
+                )
+        self.ServerPing = channel.unary_unary(
+                '/chat.ChatService/ServerPing',
+                request_serializer=chat__service__pb2.Empty.SerializeToString,
+                response_deserializer=chat__service__pb2.ReviveInfo.FromString,
                 )
         self.RequestHeartbeat = channel.unary_unary(
                 '/chat.ChatService/RequestHeartbeat',
@@ -44,7 +49,13 @@ class ChatServiceStub(object):
 class ChatServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Ping(self, request, context):
+    def ClientPing(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ServerPing(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -77,10 +88,15 @@ class ChatServiceServicer(object):
 
 def add_ChatServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Ping': grpc.unary_unary_rpc_method_handler(
-                    servicer.Ping,
+            'ClientPing': grpc.unary_unary_rpc_method_handler(
+                    servicer.ClientPing,
                     request_deserializer=chat__service__pb2.Empty.FromString,
                     response_serializer=chat__service__pb2.Empty.SerializeToString,
+            ),
+            'ServerPing': grpc.unary_unary_rpc_method_handler(
+                    servicer.ServerPing,
+                    request_deserializer=chat__service__pb2.Empty.FromString,
+                    response_serializer=chat__service__pb2.ReviveInfo.SerializeToString,
             ),
             'RequestHeartbeat': grpc.unary_unary_rpc_method_handler(
                     servicer.RequestHeartbeat,
@@ -113,7 +129,7 @@ class ChatService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Ping(request,
+    def ClientPing(request,
             target,
             options=(),
             channel_credentials=None,
@@ -123,9 +139,26 @@ class ChatService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/chat.ChatService/Ping',
+        return grpc.experimental.unary_unary(request, target, '/chat.ChatService/ClientPing',
             chat__service__pb2.Empty.SerializeToString,
             chat__service__pb2.Empty.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ServerPing(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/chat.ChatService/ServerPing',
+            chat__service__pb2.Empty.SerializeToString,
+            chat__service__pb2.ReviveInfo.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

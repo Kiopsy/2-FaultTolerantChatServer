@@ -4,55 +4,18 @@ import chat_service_pb2
 import chat_service_pb2_grpc
 import time
 import threading
+from thread_safe_set import ThreadSafeSet
 
 LOGS_DIR = "logs"
 HOST = "localhost"
-HEARTBEAT_RATE = 1
-
-class ThreadSafeSet:
-    def __init__(self):
-        self._set = set()
-        self._lock = threading.Lock()
-
-    def add(self, item):
-        with self._lock:
-            self._set.add(item)
-
-    def remove(self, item):
-        with self._lock:
-            self._set.remove(item)
-
-    def __contains__(self, item):
-        with self._lock:
-            return item in self._set
-
-    def __len__(self):
-        with self._lock:
-            return len(self._set)
-        
-    def __iter__(self):
-        with self._lock:
-            return iter(self._set)
-
-# class ExceptionBlocker:
-#     def __init__(self, stub):
-#         self.stub = stub
-        
-#     def __getattr__(self, name):
-#         method = getattr(self.stub, name)
-#         def wrapper(*args, **kwargs):
-#             try:
-#                 return method(*args, **kwargs)
-#             except grpc.RpcError as e:
-#                 print(f"Error calling {name}: {e}")
-#         return wrapper
+HEARTRATE = 1
 
 class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
     def __init__(self, id, silent = False):
         self.MACHINE_ID = id
         self.SILENT = silent
-        self.primary = -1 
+        self.primary_port = -1 
         self.connected = False
 
         self.HOST = HOST # change later
@@ -70,9 +33,9 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         # Create the log file
         if not os.path.exists(LOGS_DIR):
             os.makedirs(LOGS_DIR)
-        self.log_file = open(f"{LOGS_DIR}/machine{self.MACHINE_ID}.log", "w")
+        self.LOG_FILE_NAME = f"{LOGS_DIR}/machine{self.MACHINE_ID}.log"
+        self.log_file = open(self.LOG_FILE_NAME , "w")
         self.log_dict = dict()
-
 
         # Voting
         self.in_voting = False
@@ -91,7 +54,12 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
                 for port, host in self.PEER_PORTS.items():
                     channel = grpc.insecure_channel(host + ':' + str(port)) 
                     self.peer_stubs[port] = chat_service_pb2_grpc.ChatServiceStub(channel)
-                    self.peer_stubs[port].Ping(chat_service_pb2.Empty())
+                    revive_info = self.peer_stubs[port].ServerPing(chat_service_pb2.Empty())
+                    
+                    if revive_info.primary_port != -1:
+                        self.revive(revive_info)
+                    
+                    self.sprint(self.primary_port)
                     self.peer_alive[port] = True
                 self.connected = True
             except:
@@ -100,9 +68,15 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         self.sprint("Connected")
         return self.connected
 
-    def revive(self, port):
-        pass
+    def revive(self, revive_info):
+        self.primary_port = revive_info.primary_port
 
+        # clear log file and rewrite with revive_info file !!
+        self.log_file.truncate(0)
+        self.log_file.write(revive_info.commit_log)
+        self.log_file.flush()
+
+        # update db to be like the log file OR use binary sent data to be the new db
     
     # HEARTBEAT
 
@@ -112,24 +86,22 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             if alive:
                 leader = min(leader, port)
 
-        self.primary = leader
-        self.sprint(f"New primary: {self.primary}")
+        self.primary_port = leader
+        self.sprint(f"New primary: {self.primary_port}")
     
     def receiveHeartbeat(self):
-        self.leaderElection() # is this safe to do (for rebooters)
+        if self.primary_port == -1:
+            self.leaderElection() # is this safe to do (for rebooters)
         while True:
-            time.sleep(HEARTBEAT_RATE)
+            time.sleep(HEARTRATE)
             for port, stub in self.peer_stubs.items():
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
-                    # IF PEER WAS dead, primary should send over the log file -> the peer will respond when its rebooted its db -> and then will be allowed to come back to life
-                    if self.peer_alive[port] == False:
-                        self.revive(port)
                     self.peer_alive[response.port] = True
                     # self.sprint(f"Heartbeat received from port {port}")
                 except:
                     self.peer_alive[port] = False
-                    if self.primary == port: # if primary just died
+                    if self.primary_port == port: # if primary just died
                         self.leaderElection()
                     self.sprint(f"Heartbeat not received from port {port}")
     
@@ -190,18 +162,25 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         return chat_service_pb2.Empty()
     
 
-    def Ping(self, request, context):
+    def ServerPing(self, request, context):
+        if self.primary_port == self.PORT:
+            with open(self.LOG_FILE_NAME, 'r') as file:
+                text_data = file.read()
+            return chat_service_pb2.ReviveInfo(primary_port = self.primary_port, commit_log = text_data, db_bytes = bytes())
+        else:
+            return chat_service_pb2.ReviveInfo(primary_port = -1)
+
+    def ClientPing(self, request, context):
         return chat_service_pb2.Empty()
 
     # CLIENT FUNCTIONS
-
     def connection_required(func):
-        def wrapper(*args, **kwargs):
-            self = args[0]
+        def wrapper(self, *args, **kwargs):
+            print("self.connected", self.connected)
             if not self.connected:
                 return
             
-            func(*args, **kwargs)
+            func(self, *args, **kwargs)
         
         return wrapper
 

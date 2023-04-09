@@ -20,7 +20,7 @@ class Client:
             try:
                 channel = grpc.insecure_channel(host + ':' + str(port)) 
                 self.stub = chat_service_pb2_grpc.ChatServiceStub(channel)
-                self.stub.Ping(chat_service_pb2.Empty())
+                self.stub.ClientPing(chat_service_pb2.Empty())
 
                 self.connected = True
                 print(f"Client connected to machine w/ port {port}")
