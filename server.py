@@ -42,11 +42,11 @@ if __name__ == '__main__':
     print("Three servers created using multiprocessing.")
 
     #### TESTING KILLING THE FIRST PROCESS
-    time.sleep(8)
+    time.sleep(10)
     processes[0].terminate()
     for _ in range(5):
         print('First process killed')
 
-     #### TESTING REVIVING THE FIRST PROCESS
-    time.sleep(8)
-    multiprocessing.Process(target=serve, args=(0, )).start()
+    # #### TESTING REVIVING THE FIRST PROCESS
+    # time.sleep(8)
+    # multiprocessing.Process(target=serve, args=(0, )).start()

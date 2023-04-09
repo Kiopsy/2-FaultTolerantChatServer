@@ -98,7 +98,10 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
                 raise Exception("Incorrect hostname or port")
 
         self.sprint("Connected")
-        return self.connected       
+        return self.connected
+
+    def revive(self, port):
+        pass
 
     
     # HEARTBEAT
@@ -113,15 +116,15 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         self.sprint(f"New primary: {self.primary}")
     
     def receiveHeartbeat(self):
-        self.leaderElection()
+        self.leaderElection() # is this safe to do (for rebooters)
         while True:
             time.sleep(HEARTBEAT_RATE)
             for port, stub in self.peer_stubs.items():
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
                     # IF PEER WAS dead, primary should send over the log file -> the peer will respond when its rebooted its db -> and then will be allowed to come back to life
-                    # if self.peer_alive[port] == False:
-                    #     self.reconnect(port)
+                    if self.peer_alive[port] == False:
+                        self.revive(port)
                     self.peer_alive[response.port] = True
                     # self.sprint(f"Heartbeat received from port {port}")
                 except:
@@ -202,7 +205,6 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         
         return wrapper
 
-    @connection_required
     def Addition(self, request, context):
 
         self.sprint("Received addition request")

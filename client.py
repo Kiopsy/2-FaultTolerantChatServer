@@ -33,14 +33,18 @@ class Client:
         while self.connected:
             a = int(input("A: "))
             b = int(input("B: "))
-            try:
-                numbers = chat_service_pb2.TwoNumbers(a=a, b=b)
-                sum = self.stub.Addition(numbers).sum
 
-                print(f"Server finished our addition request: {sum}")
-            except:
-                print("Connection broke...connecting again")
-                self.connect()
+            while True:
+                try:
+                    numbers = chat_service_pb2.TwoNumbers(a=a, b=b)
+                    sum = self.stub.Addition(numbers).sum
+
+                    print(f"Server finished our addition request: {sum}")
+                    break
+                except Exception as e:
+                    # handle the exception and print the error message
+                    print(f"An error occurred")
+                    self.connect()
 
 
 if __name__ == '__main__':
