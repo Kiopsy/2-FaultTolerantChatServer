@@ -21,11 +21,11 @@ def serve(id):
     time.sleep(3)
     machine.connect()
     machine.heartbeat_thread.start()
-    ##### TESTIING MULTIPLE COMMITS AT ONCE
-    # for i in range(5):
-    #     num = random.randint(1,3)
-    #     time.sleep(num)
-    #     machine.sendCommitProposal(commit = f"machine {machine.MACHINE_ID}, commit {i}")
+    #### TESTIING MULTIPLE COMMITS AT ONCE
+    for i in range(5):
+        num = random.randint(1,3)
+        time.sleep(num)
+        machine.sendCommitProposal(commit = f"machine {machine.MACHINE_ID}, commit {i}")
     server.wait_for_termination()
 
 
@@ -55,7 +55,7 @@ if __name__ == '__main__':
         #### TESTING KILLING THE FIRST PROCESS
         time.sleep(8)
         choices = input("Which process id(s) should die: ")
-        choices.split(" ")
+        choices = choices.split(", ")
         choices = [int(c) for c in choices]
 
         for c in choices:

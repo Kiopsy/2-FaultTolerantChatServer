@@ -38,7 +38,6 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         self.log_dict = dict()
 
         # Voting
-        self.in_voting = False
         self.seen_ballots = ThreadSafeSet()
 
     def sprint(self, *args, end = "\n"):
@@ -54,12 +53,11 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
                 for port, host in self.PEER_PORTS.items():
                     channel = grpc.insecure_channel(host + ':' + str(port)) 
                     self.peer_stubs[port] = chat_service_pb2_grpc.ChatServiceStub(channel)
-                    revive_info = self.peer_stubs[port].ServerPing(chat_service_pb2.Empty())
+                    revive_info = self.peer_stubs[port].Alive(chat_service_pb2.Empty())
                     
-                    if revive_info.primary_port != -1:
+                    if revive_info.updates:
                         self.revive(revive_info)
-                    
-                    self.sprint(self.primary_port)
+
                     self.peer_alive[port] = True
                 self.connected = True
             except:
@@ -70,6 +68,8 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
     def revive(self, revive_info):
         self.primary_port = revive_info.primary_port
+
+        self.sprint("Received primary: ", self.primary_port)
 
         # clear log file and rewrite with revive_info file !!
         self.log_file.truncate(0)
@@ -143,6 +143,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         return approved
 
     def writeToLog(self, commit, ballot_id):
+        # TODO: if not connected, wait until connected to add these commits
         self.sprint(f"Added commit {commit} w/ ballot_id {ballot_id}")
         self.log_file.write(f"{ballot_id}# {commit}\n")
         self.log_file.flush()
@@ -163,27 +164,33 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         return chat_service_pb2.Empty()
     
 
-    def ServerPing(self, request, context):
+    def Alive(self, request, context):
         if self.primary_port == self.PORT:
             with open(self.LOG_FILE_NAME, 'r') as file:
                 text_data = file.read()
-            return chat_service_pb2.ReviveInfo(primary_port = self.primary_port, commit_log = text_data, db_bytes = bytes())
+            return chat_service_pb2.ReviveInfo(
+                primary_port = self.primary_port, 
+                commit_log = text_data, 
+                db_bytes = bytes(),
+                updates = True)
         else:
-            return chat_service_pb2.ReviveInfo(primary_port = -1)
-
-    def ClientPing(self, request, context):
-        return chat_service_pb2.Empty()
+            return chat_service_pb2.ReviveInfo(updates = False)
 
     # CLIENT FUNCTIONS
     def connection_required(func):
-        def wrapper(self, *args, **kwargs):
-            print("self.connected", self.connected)
+        def wrapper(self, request, context):
+
             if not self.connected:
-                return
+                context.set_details("Server currently disconnected.")
+                context.set_code(grpc.StatusCode.FAILED_PRECONDITION)
+                return None
             
-            func(self, *args, **kwargs)
+            func(self, request, context)
         
         return wrapper
+    
+    def Ping(self, request, context):
+        return chat_service_pb2.Empty()
 
     def Addition(self, request, context):
 

@@ -5,11 +5,17 @@ syntax = "proto3";
 package chat;
 
 service ChatService {
-  rpc ClientPing (Empty) returns (Empty) {}
-  rpc ServerPing (Empty) returns (ReviveInfo) {}
+  rpc Ping (Empty) returns (Empty) {}
+
+  // Connection functions
+  rpc Alive (Empty) returns (ReviveInfo) {}
   rpc RequestHeartbeat (Empty) returns (HeartbeatResponse) {}
+
+  // Voting functions
   rpc ProposeCommit (CommitRequest) returns (CommitVote) {}
   rpc SendVoteResult (CommitVote) returns (Empty) {}
+
+
   rpc Addition (TwoNumbers) returns (Sum) {}
 }
 
@@ -17,6 +23,7 @@ message ReviveInfo {
   int64 primary_port = 1;
   string commit_log = 2;
   bytes db_bytes = 3;
+  bool updates = 4;
 }
 
 message Empty {}
