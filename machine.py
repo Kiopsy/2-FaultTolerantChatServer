@@ -100,10 +100,11 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
                     self.peer_alive[response.port] = True
                     # self.sprint(f"Heartbeat received from port {port}")
                 except:
+                    if self.peer_alive[port]:
+                        self.sprint(f"Heartbeat not received from port {port}")
                     self.peer_alive[port] = False
                     if self.primary_port == port: # if primary just died
                         self.leaderElection()
-                    self.sprint(f"Heartbeat not received from port {port}")
     
     def RequestHeartbeat(self, request, context):
         return chat_service_pb2.HeartbeatResponse(port=self.PORT)

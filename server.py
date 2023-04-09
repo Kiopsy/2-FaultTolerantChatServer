@@ -6,6 +6,7 @@ from machine import Machine
 import multiprocessing
 import time
 import random
+import signal, sys
 
 def serve(id):
     machine = Machine(id)
@@ -40,16 +41,30 @@ if __name__ == '__main__':
     for process in processes:
         process.start()
     print("Three servers created using multiprocessing.")
+    
+    ### Clean exiting on ^C
+    def signal_handler(signal, frame):
+        for p in processes:
+            p.terminate()
+        print("Exiting...")
+        sys.exit(0)
 
-
-
-    #### TESTING KILLING THE FIRST PROCESS
-    time.sleep(8)
-    choice = int(input("Which process id should die: "))
-    processes[choice].terminate()
+    signal.signal(signal.SIGINT, signal_handler)
+    
     for _ in range(5):
-        print(f'Machine {choice} killed')
+        #### TESTING KILLING THE FIRST PROCESS
+        time.sleep(8)
+        choices = input("Which process id(s) should die: ")
+        choices.split(" ")
+        choices = [int(c) for c in choices]
 
-    #### TESTING REVIVING THE FIRST PROCESS
-    time.sleep(8)
-    multiprocessing.Process(target=serve, args=(choice, )).start()
+        for c in choices:
+            processes[c].terminate()
+            for _ in range(3):
+                print(f'Machine {c} killed')
+
+        time.sleep(8)
+
+        #### TESTING REVIVING THE FIRST PROCESS
+        for c in choices:
+            multiprocessing.Process(target=serve, args=(c, )).start()
