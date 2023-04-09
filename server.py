@@ -23,7 +23,7 @@ def serve(id):
     for i in range(5):
         num = random.randint(1,3)
         time.sleep(num)
-        machine.sendCommitProposal(commit = f"{machine.MACHINE_ID}: {i} -- {num}", line = 1)
+        machine.sendCommitProposal(commit = f"machine {machine.MACHINE_ID}, commit {i}")
     server.wait_for_termination()
 
 

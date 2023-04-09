@@ -1,2 +1,9 @@
-1: 0 -- 1
-0: 0 -- 1
+2# machine 2, commit 0
+4# machine 2, commit 1
+5# machine 2, commit 2
+7# machine 2, commit 3
+8# machine 1, commit 3
+9# machine 2, commit 4
+10# machine 0, commit 3
+11# machine 1, commit 4
+12# machine 0, commit 4

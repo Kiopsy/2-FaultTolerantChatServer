@@ -11,6 +11,31 @@ LOGS_DIR = "logs"
 HOST = "localhost"
 HEARTBEAT_RATE = 1
 
+class ThreadSafeSet:
+    def __init__(self):
+        self._set = set()
+        self._lock = threading.Lock()
+
+    def add(self, item):
+        with self._lock:
+            self._set.add(item)
+
+    def remove(self, item):
+        with self._lock:
+            self._set.remove(item)
+
+    def __contains__(self, item):
+        with self._lock:
+            return item in self._set
+
+    def __len__(self):
+        with self._lock:
+            return len(self._set)
+        
+    def __iter__(self):
+        with self._lock:
+            return iter(self._set)
+
 # class ExceptionBlocker:
 #     def __init__(self, stub):
 #         self.stub = stub
@@ -53,6 +78,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
         # Voting
         self.in_voting = False
+        self.ballot_numbers = ThreadSafeSet()
 
     def sprint(self, *args, end = "\n"):
         if not self.SILENT:
@@ -107,26 +133,12 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
             self.sendCommitProposal()
 
-    def poll_while_voting(func):
-        def wrapper(*args, **kwargs):
-            self = args[0]
 
-            while self.in_voting:
-                time.sleep(0.1)
-                self.sprint("waiting")
-
-            func(*args, **kwargs)
-
-        return wrapper
-    
-    @poll_while_voting
     def sendCommitProposal(self, commit, line = None):
-        self.in_voting = True
-
         if line == None:
-            with open(f"{LOGS_DIR}/machine{self.MACHINE_ID}.log", "r") as f:
-                line = len(f.readlines()) + 1
+            line = max(self.ballot_numbers if self.ballot_numbers else [0]) + 1
 
+        self.ballot_numbers.add(line)
         approved = True
         living_stubs = lambda: [self.peer_stubs[port] for port in self.peer_alive if self.peer_alive[port]]
 
@@ -141,40 +153,35 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
         if approved:
             # add commit
-            self.sprint(f"Added commit {commit} on line {line}")
-            self.log_file.write(commit + '\n')
+            self.sprint(f"*Added commit {commit} on line {line}")
+            self.log_file.write(f"{line}# {commit}\n")
             self.log_file.flush()
         else:
-            self.sprint("Rejected commit")
+            self.sprint("*Rejected commit")
 
-        self.in_voting = False
         return approved
 
     def writeToLog(self, commit, line):
-        self.log_file.write(commit + '\n')
+        self.log_file.write(f"{line}# {commit}\n")
         nums = commit.split(';')
         self.log_file.flush()
 
     def ProposeCommit(self, request, context):
-        self.in_voting = True
 
-        with open(f"{LOGS_DIR}/machine{self.MACHINE_ID}.log", "r") as f:
-            approved = request.line > len(f.readlines())
+        approved = request.line not in self.ballot_numbers
+        self.ballot_numbers.add(request.line)
         return chat_service_pb2.CommitVote(approve = approved)
     
     def SendVoteResult(self, request, context):
-        self.in_voting = True
-
         if request.approve:
             # add commit
             commit, line = request.commit, request.line
             self.sprint(f"Added commit {commit} on line {line}")
-            self.log_file.write(commit + '\n')
+            self.log_file.write(f"{line}# {commit}\n")
             self.log_file.flush()
         else:
             self.sprint("Rejected commit")
 
-        self.is_voting = False
         return chat_service_pb2.Empty()
     
     def Addition(self, request, context):
