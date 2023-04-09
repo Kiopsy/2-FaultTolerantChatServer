@@ -1,11 +1,9 @@
 import os
 import grpc
-import chat_service_pb2 as chat_service_pb2
-import chat_service_pb2_grpc as chat_service_pb2_grpc
+import chat_service_pb2
+import chat_service_pb2_grpc
 import time
 import threading
-import queue
-from atom import Counter
 
 LOGS_DIR = "logs"
 HOST = "localhost"
@@ -78,11 +76,14 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
         # Voting
         self.in_voting = False
-        self.ballot_numbers = ThreadSafeSet()
+        self.seen_ballots = ThreadSafeSet()
 
     def sprint(self, *args, end = "\n"):
         if not self.SILENT:
             print(f"Machine {self.MACHINE_ID}: {' '.join(str(x) for x in args)}", end = end)
+
+
+    # PEER CONNECTIONS
 
     def connect(self):
         if not self.connected:
@@ -97,6 +98,12 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
         self.sprint("Connected")
         return self.connected
+    
+
+    
+
+    
+    # HEARTBEAT
 
     # def leaderElection(self):
     #     leader = float("inf")
@@ -114,6 +121,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             for port, stub in self.peer_stubs.items():
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
+                    # IF PEER WAS dead, primary should send over the log file -> the peer will respond when its rebooted its db -> and then will be allowed to come back to life
                     self.peer_alive[response.port] = True
                     self.sprint(f"Heartbeat received from port {port}")
                 except:
@@ -124,65 +132,65 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
     
     def RequestHeartbeat(self, request, context):
         return chat_service_pb2.HeartbeatResponse(port=self.PORT)
-    
-    def handleProposals(self):
-        # Thread to handle proposals
-        while True:
-            if self.in_voting == True or self.proposal_queue.qsize() == 0:
-                continue
 
-            self.sendCommitProposal()
 
+
+    # CONSENSUS VOTING
 
     def sendCommitProposal(self, commit, line = None):
         if line == None:
-            line = max(self.ballot_numbers if self.ballot_numbers else [0]) + 1
+            line = max(self.seen_ballots if self.seen_ballots else [0]) + 1
 
-        self.ballot_numbers.add(line)
+        self.seen_ballots.add(line)
         approved = True
-        living_stubs = lambda: [self.peer_stubs[port] for port in self.peer_alive if self.peer_alive[port]]
+        living_stubs = lambda: [(self.peer_stubs[port], port) for port in self.peer_alive if self.peer_alive[port]]
 
-        for stub in living_stubs():
+        for stub, port in living_stubs():
             req = chat_service_pb2.CommitRequest(commit = commit, line = line)
-            response : chat_service_pb2.CommitVote = stub.ProposeCommit(req)
+            try:
+                response : chat_service_pb2.CommitVote = stub.ProposeCommit(req)
+            except:
+                self.peer_alive[port] = False
             approved &= response.approve
 
-        for stub in living_stubs():
+        for stub, port in living_stubs():
             vote = chat_service_pb2.CommitVote(commit = commit, approve = approved, line = line)
-            stub.SendVoteResult(vote)
+            try:
+                stub.SendVoteResult(vote)
+            except:
+                self.peer_alive[port] = False
 
         if approved:
             # add commit
-            self.sprint(f"*Added commit {commit} on line {line}")
-            self.log_file.write(f"{line}# {commit}\n")
-            self.log_file.flush()
+            self.writeToLog(commit, line)
         else:
             self.sprint("*Rejected commit")
 
         return approved
 
     def writeToLog(self, commit, line):
+        self.sprint(f"Added commit {commit} on line {line}")
         self.log_file.write(f"{line}# {commit}\n")
-        nums = commit.split(';')
         self.log_file.flush()
 
     def ProposeCommit(self, request, context):
 
-        approved = request.line not in self.ballot_numbers
-        self.ballot_numbers.add(request.line)
+        approved = request.line not in self.seen_ballots
+        self.seen_ballots.add(request.line)
         return chat_service_pb2.CommitVote(approve = approved)
     
     def SendVoteResult(self, request, context):
         if request.approve:
             # add commit
             commit, line = request.commit, request.line
-            self.sprint(f"Added commit {commit} on line {line}")
-            self.log_file.write(f"{line}# {commit}\n")
-            self.log_file.flush()
+            self.writeToLog(commit, line)
         else:
             self.sprint("Rejected commit")
 
         return chat_service_pb2.Empty()
+    
+
+    # CLIENT FUNCTIONS
     
     def Addition(self, request, context):
         return chat_service_pb2.Sum(sum = request.a + request.b)
