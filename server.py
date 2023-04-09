@@ -20,10 +20,11 @@ def serve(id):
     time.sleep(3)
     machine.connect()
     machine.heartbeat_thread.start()
-    for i in range(5):
-        num = random.randint(1,3)
-        time.sleep(num)
-        machine.sendCommitProposal(commit = f"machine {machine.MACHINE_ID}, commit {i}")
+    ##### TESTIING MULTIPLE COMMITS AT ONCE
+    # for i in range(5):
+    #     num = random.randint(1,3)
+    #     time.sleep(num)
+    #     machine.sendCommitProposal(commit = f"machine {machine.MACHINE_ID}, commit {i}")
     server.wait_for_termination()
 
 
@@ -38,14 +39,14 @@ if __name__ == '__main__':
 
     for process in processes:
         process.start()
-
-    # for process in processes:
-    #     process.join()
-
     print("Three servers created using multiprocessing.")
 
-    # time.sleep(5)
-    # # Kill the first process
-    # processes[0].terminate()
-    # for i in range(10):
-    #     print('first process killed')
+    #### TESTING KILLING THE FIRST PROCESS
+    time.sleep(8)
+    processes[0].terminate()
+    for _ in range(5):
+        print('First process killed')
+
+     #### TESTING REVIVING THE FIRST PROCESS
+    time.sleep(8)
+    multiprocessing.Process(target=serve, args=(0, )).start()

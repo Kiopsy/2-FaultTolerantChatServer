@@ -61,7 +61,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
         self.PEER_PORTS : dict[int, str] = {50050: HOST, 50051: HOST, 50052: HOST} # change "HOST" when we want to use other devices
         del self.PEER_PORTS[self.PORT]
 
-        self.peer_alive = {}
+        self.peer_alive = {port: False for port in self.PEER_PORTS}
 
         self.peer_stubs : dict[int, chat_service_pb2_grpc.ChatServiceStub] = {}
 
@@ -91,62 +91,60 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
                 for port, host in self.PEER_PORTS.items():
                     channel = grpc.insecure_channel(host + ':' + str(port)) 
                     self.peer_stubs[port] = chat_service_pb2_grpc.ChatServiceStub(channel)
+                    self.peer_stubs[port].Ping(chat_service_pb2.Empty())
                     self.peer_alive[port] = True
                 self.connected = True
             except:
                 raise Exception("Incorrect hostname or port")
 
         self.sprint("Connected")
-        return self.connected
-    
-
-    
+        return self.connected       
 
     
     # HEARTBEAT
 
-    # def leaderElection(self):
-    #     leader = float("inf")
-    #     for port, alive in list(list(self.peer_alive.items()) + [(self.PORT, True)]):
-    #         if alive:
-    #             leader = min(leader, port)
+    def leaderElection(self):
+        leader = float("inf")
+        for port, alive in list(list(self.peer_alive.items()) + [(self.PORT, True)]):
+            if alive:
+                leader = min(leader, port)
 
-    #     self.primary = leader
-    #     self.sprint(f"New primary: {self.primary}")
+        self.primary = leader
+        self.sprint(f"New primary: {self.primary}")
     
     def receiveHeartbeat(self):
-        # self.leaderElection()
+        self.leaderElection()
         while True:
             time.sleep(HEARTBEAT_RATE)
             for port, stub in self.peer_stubs.items():
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
                     # IF PEER WAS dead, primary should send over the log file -> the peer will respond when its rebooted its db -> and then will be allowed to come back to life
+                    # if self.peer_alive[port] == False:
+                    #     self.reconnect(port)
                     self.peer_alive[response.port] = True
-                    self.sprint(f"Heartbeat received from port {port}")
+                    # self.sprint(f"Heartbeat received from port {port}")
                 except:
                     self.peer_alive[port] = False
-                    # if self.primary == port: # if primary just died
-                    #     self.leaderElection()
+                    if self.primary == port: # if primary just died
+                        self.leaderElection()
                     self.sprint(f"Heartbeat not received from port {port}")
     
     def RequestHeartbeat(self, request, context):
         return chat_service_pb2.HeartbeatResponse(port=self.PORT)
 
-
-
     # CONSENSUS VOTING
 
-    def sendCommitProposal(self, commit, line = None):
-        if line == None:
-            line = max(self.seen_ballots if self.seen_ballots else [0]) + 1
+    def sendCommitProposal(self, commit):
 
-        self.seen_ballots.add(line)
+        ballot_id = max(self.seen_ballots if self.seen_ballots else [0]) + 1
+        self.seen_ballots.add(ballot_id)
+        
         approved = True
         living_stubs = lambda: [(self.peer_stubs[port], port) for port in self.peer_alive if self.peer_alive[port]]
 
         for stub, port in living_stubs():
-            req = chat_service_pb2.CommitRequest(commit = commit, line = line)
+            req = chat_service_pb2.CommitRequest(commit = commit, ballot_id = ballot_id)
             try:
                 response : chat_service_pb2.CommitVote = stub.ProposeCommit(req)
             except:
@@ -154,7 +152,7 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
             approved &= response.approve
 
         for stub, port in living_stubs():
-            vote = chat_service_pb2.CommitVote(commit = commit, approve = approved, line = line)
+            vote = chat_service_pb2.CommitVote(commit = commit, approve = approved, ballot_id = ballot_id)
             try:
                 stub.SendVoteResult(vote)
             except:
@@ -162,35 +160,65 @@ class Machine(chat_service_pb2_grpc.ChatServiceServicer):
 
         if approved:
             # add commit
-            self.writeToLog(commit, line)
+            self.writeToLog(commit, ballot_id)
         else:
             self.sprint("*Rejected commit")
 
         return approved
 
-    def writeToLog(self, commit, line):
-        self.sprint(f"Added commit {commit} on line {line}")
-        self.log_file.write(f"{line}# {commit}\n")
+    def writeToLog(self, commit, ballot_id):
+        self.sprint(f"Added commit {commit} w/ ballot_id {ballot_id}")
+        self.log_file.write(f"{ballot_id}# {commit}\n")
         self.log_file.flush()
 
     def ProposeCommit(self, request, context):
-
-        approved = request.line not in self.seen_ballots
-        self.seen_ballots.add(request.line)
+        approved = request.ballot_id not in self.seen_ballots
+        self.seen_ballots.add(request.ballot_id)
         return chat_service_pb2.CommitVote(approve = approved)
     
     def SendVoteResult(self, request, context):
         if request.approve:
             # add commit
-            commit, line = request.commit, request.line
-            self.writeToLog(commit, line)
+            commit, ballot_id = request.commit, request.ballot_id
+            self.writeToLog(commit, ballot_id)
         else:
             self.sprint("Rejected commit")
 
         return chat_service_pb2.Empty()
     
 
+    def Ping(self, request, context):
+        return chat_service_pb2.Empty()
+
     # CLIENT FUNCTIONS
-    
+
+    def connection_required(func):
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            if not self.connected:
+                return
+            
+            func(*args, **kwargs)
+        
+        return wrapper
+
+    @connection_required
     def Addition(self, request, context):
-        return chat_service_pb2.Sum(sum = request.a + request.b)
+
+        self.sprint("Received addition request")
+
+        sum = request.a + request.b
+
+        success = False
+        for i in range(5):
+            self.sprint(i)
+            if self.sendCommitProposal(f"{self.MACHINE_ID} -> {sum}"):
+                success = True
+                break
+        
+        self.sprint("Voting result", success)
+
+        if success:
+            return chat_service_pb2.Sum(sum = sum)
+        else:
+            return chat_service_pb2.Sum(sum = 0)

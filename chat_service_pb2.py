@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63hat_service.proto\x12\x04\x63hat\"\x07\n\x05\x45mpty\"2\n\x11HeartbeatResponse\x12\x0c\n\x04port\x18\x01 \x01(\x03\x12\x0f\n\x07primary\x18\x02 \x01(\x08\"-\n\rCommitRequest\x12\x0e\n\x06\x63ommit\x18\x01 \x01(\t\x12\x0c\n\x04line\x18\x02 \x01(\x03\";\n\nCommitVote\x12\x0f\n\x07\x61pprove\x18\x01 \x01(\x08\x12\x0e\n\x06\x63ommit\x18\x02 \x01(\t\x12\x0c\n\x04line\x18\x03 \x01(\x03\"\"\n\nTwoNumbers\x12\t\n\x01\x61\x18\x01 \x01(\x03\x12\t\n\x01\x62\x18\x02 \x01(\x03\"\x12\n\x03Sum\x12\x0b\n\x03sum\x18\x01 \x01(\x03\x32\xe1\x01\n\x0b\x43hatService\x12:\n\x10RequestHeartbeat\x12\x0b.chat.Empty\x1a\x17.chat.HeartbeatResponse\"\x00\x12\x38\n\rProposeCommit\x12\x13.chat.CommitRequest\x1a\x10.chat.CommitVote\"\x00\x12\x31\n\x0eSendVoteResult\x12\x10.chat.CommitVote\x1a\x0b.chat.Empty\"\x00\x12)\n\x08\x41\x64\x64ition\x12\x10.chat.TwoNumbers\x1a\t.chat.Sum\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x63hat_service.proto\x12\x04\x63hat\"\x07\n\x05\x45mpty\"2\n\x11HeartbeatResponse\x12\x0c\n\x04port\x18\x01 \x01(\x03\x12\x0f\n\x07primary\x18\x02 \x01(\x08\"2\n\rCommitRequest\x12\x0e\n\x06\x63ommit\x18\x01 \x01(\t\x12\x11\n\tballot_id\x18\x02 \x01(\x03\"@\n\nCommitVote\x12\x0f\n\x07\x61pprove\x18\x01 \x01(\x08\x12\x0e\n\x06\x63ommit\x18\x02 \x01(\t\x12\x11\n\tballot_id\x18\x03 \x01(\x03\"\"\n\nTwoNumbers\x12\t\n\x01\x61\x18\x01 \x01(\x03\x12\t\n\x01\x62\x18\x02 \x01(\x03\"\x12\n\x03Sum\x12\x0b\n\x03sum\x18\x01 \x01(\x03\x32\x85\x02\n\x0b\x43hatService\x12\"\n\x04Ping\x12\x0b.chat.Empty\x1a\x0b.chat.Empty\"\x00\x12:\n\x10RequestHeartbeat\x12\x0b.chat.Empty\x1a\x17.chat.HeartbeatResponse\"\x00\x12\x38\n\rProposeCommit\x12\x13.chat.CommitRequest\x1a\x10.chat.CommitVote\"\x00\x12\x31\n\x0eSendVoteResult\x12\x10.chat.CommitVote\x1a\x0b.chat.Empty\"\x00\x12)\n\x08\x41\x64\x64ition\x12\x10.chat.TwoNumbers\x1a\t.chat.Sum\"\x00\x62\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'chat_service_pb2', globals())
@@ -25,13 +25,13 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _HEARTBEATRESPONSE._serialized_start=37
   _HEARTBEATRESPONSE._serialized_end=87
   _COMMITREQUEST._serialized_start=89
-  _COMMITREQUEST._serialized_end=134
-  _COMMITVOTE._serialized_start=136
-  _COMMITVOTE._serialized_end=195
-  _TWONUMBERS._serialized_start=197
-  _TWONUMBERS._serialized_end=231
-  _SUM._serialized_start=233
-  _SUM._serialized_end=251
-  _CHATSERVICE._serialized_start=254
-  _CHATSERVICE._serialized_end=479
+  _COMMITREQUEST._serialized_end=139
+  _COMMITVOTE._serialized_start=141
+  _COMMITVOTE._serialized_end=205
+  _TWONUMBERS._serialized_start=207
+  _TWONUMBERS._serialized_end=241
+  _SUM._serialized_start=243
+  _SUM._serialized_end=261
+  _CHATSERVICE._serialized_start=264
+  _CHATSERVICE._serialized_end=525
 # @@protoc_insertion_point(module_scope)
