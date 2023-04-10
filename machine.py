@@ -84,6 +84,10 @@ class Machine(ChatServiceServicer):
                 try:
                     # form connection (stub)
                     channel = grpc.insecure_channel(host + ':' + str(port)) 
+                    
+                    if not channel._channel.is_active():
+                        raise Exception
+                    
                     self.peer_stubs[port] = ChatServiceStub(channel)
                     #  check if the peer is alive
                     revive_info = self.peer_stubs[port].Alive(chat_service_pb2.Empty())
