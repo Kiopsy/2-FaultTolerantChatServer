@@ -1,13 +1,13 @@
-# Replication
+# Replication Design Exercise
 
 ## Installation
 Clone the repository
 ```bash
-git clone https://github.com/jared-ni/cs262-design-exercise3.git
+git clone https://github.com/Kiopsy/Replication.git
 ```
 
 ## Setting up Servers and Clients
-cd into the repository, then cd into the chat directory.
+
 For each of the 3 servers, run the server by typing:
 ```bash
 python server.py <port>
