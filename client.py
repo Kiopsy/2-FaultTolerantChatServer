@@ -7,22 +7,7 @@ class Client:
     def __init__(self) -> None:
         self.stub = TwoFaultStub()
         self.connected = self.stub.connect()
-        self.send_thread = threading.Thread(target=self.sendAddition, daemon=True)
         self.username = None
-
-    def sendAddition(self):
-        try:
-            while self.connected:
-                a = int(input("A: "))
-                b = int(input("B: "))
-
-                numbers = chat_service_pb2.TwoNumbers(a=a, b=b)
-                sum = self.stub.Addition(numbers).sum
-
-                print(f"Server finished our addition request: {sum}")
-                       
-        except KeyboardInterrupt:
-            print("Exiting...")
     
     def receive_messages(self):
         """
@@ -90,23 +75,6 @@ class Client:
         if response.success:
             self.username = username
 
-        return response
-
-
-if __name__ == '__main__':
-
-    print("Server addition application!")
-    client = Client()
-
-    login_or_register = input("Login (1) or Register (2): ")
-    if "1" in login_or_register:
-        print("Login!\n")
-        username = input("Username: ")
-        client.login(username = username, password = input("Password: "))
-    else:
-        username = input("Username: ")
-        client.register(username = username, password = input("Password: "))
-    
-    client.sendAddition()
+        return response 
 
 

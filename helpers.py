@@ -1,9 +1,8 @@
-import threading, grpc
-import chat_service_pb2_grpc as chat_service_pb2_grpc
-import chat_service_pb2 as chat_service_pb2
+import threading, grpc, chat_service_pb2_grpc, chat_service_pb2
+from concurrent import futures
 
 
-SERVER_IPS = {50051: "10.250.78.119", 50050: "10.250.174.43", 50052: "10.250.78.119"}
+SERVER_IPS = {50050: "10.250.174.43", 50051: "10.250.78.119", 50052: "10.250.78.119"}
 
 class TwoFaultStub:
     def __init__(self):
@@ -14,7 +13,6 @@ class TwoFaultStub:
         for port, host in self.SERVERS.items():
             try:
                 channel = grpc.insecure_channel(host + ':' + str(port)) 
-
                 self.stub = chat_service_pb2_grpc.ChatServiceStub(channel)
                 self.stub.Ping(chat_service_pb2.Empty())
 
@@ -26,22 +24,20 @@ class TwoFaultStub:
         return False
     
     def __getattr__(self, name):
-        if hasattr(self.stub, name):
-            def wrapper(*args, **kwargs):
-                for _ in range(3):
-                    try:
-                        func = getattr(self.stub, name)
-                        response = func(*args, **kwargs)
-                        return response
-                    except grpc.RpcError as e:
-                        print(f"An error occurred while calling {name}: {e}")
-                        self.connect()
-                        
-                print("No servers online")
-                exit(0)
-            return wrapper
-        else:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        def wrapper(*args, **kwargs):
+            for _ in range(3):
+                try:
+                    func = getattr(self.stub, name)
+                    response = func(*args, **kwargs)
+                    return response
+                except grpc.RpcError as e:
+                    print(f"An error occurred while calling {name}: {e}")
+                    self.connect()
+                    
+            print("No servers online")
+            exit(0)
+        return wrapper
+        
 
 class ThreadSafeSet:
     def __init__(self):
@@ -73,3 +69,4 @@ class ThreadSafeSet:
     def __iter__(self):
         with self._lock:
             return iter(self._set)
+        
