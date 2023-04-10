@@ -109,14 +109,17 @@ class Machine(ChatServiceServicer):
 
         self.sprint("Received primary: ", self.primary_port)
 
-        # clear log file and rewrite with revive_info file !!
-        self.log_file.truncate(0)
-        self.log_file.write(revive_info.commit_log)
-        self.log_file.flush()
+        try:
+            # clear log file and rewrite with revive_info file !!
+            self.log_file.truncate(0)
+            self.log_file.write(revive_info.commit_log)
+            self.log_file.flush()
 
-        # update db to be like the log file OR use binary sent data to be the new db
-        self.db.db = pickle.loads(revive_info.db_bytes)
-        self.db.store_data()
+            # update db to be like the log file OR use binary sent data to be the new db
+            self.db.db = pickle.loads(revive_info.db_bytes)
+            self.db.store_data()
+        except:
+            self.sprint("Some log/db updating conflict")
     
     # rpc func "Alive": takes in Empty and returns updates (if it is the primary machine) or no updates
     def Alive(self, request, context):
