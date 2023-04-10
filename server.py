@@ -89,9 +89,12 @@ if __name__ == '__main__':
 
 
     if len(sys.argv) == 2:
-        machine_id = int(sys.argv[1])
-        connection_wait_time = 5
-        serve(machine_id)
+        try:
+            machine_id = int(sys.argv[1])
+            connection_wait_time = 5
+            serve(machine_id)
+        except KeyboardInterrupt:
+            pass
     else:
         processes = create_processes()
 
