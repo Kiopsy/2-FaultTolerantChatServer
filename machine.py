@@ -92,12 +92,13 @@ class Machine(ChatServiceServicer):
                         self.update(revive_info)
 
                     self.peer_alive[port] = True
-                except:
+                except Exception as e:
+                    self.sprint("Received Error:", e)
                     self.peer_alive[port] = False
 
             self.connected = True
 
-        self.sprint("Connected")
+        self.sprint("Connected", self.peer_alive)
         return self.connected
 
     # func "update": incorporate the receieved revive info
@@ -151,11 +152,13 @@ class Machine(ChatServiceServicer):
             for port, stub in self.peer_stubs.items():
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
+                    if self.peer_alive[response.port] == False:
+                        self.sprint(f"{response.port} is back online", self.peer_alive)
                     self.peer_alive[response.port] = True
                 except:
                     # if cannot connect to a peer, mark it as dead
                     if self.peer_alive[port]:
-                        self.sprint(f"Heartbeat not received from port {port}")
+                        self.sprint(f"Heartbeat not received from port {port}", self.peer_alive)
                     self.peer_alive[port] = False
                     if self.primary_port == port: # run an election if the primary has died 
                         self.leader_election()
