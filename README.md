@@ -1,5 +1,9 @@
 # Replication Design Exercise
 
+Emeka Ezike & Victor Goncalves
+
+[Engineering Notebook](https://docs.google.com/document/d/1S5sMQA5DNpH07CbEVKX_twklYyqPWQBLZ0j0jc64Uks/edit?usp=sharing)
+
 ## Installation
 Clone the repository
 ```bash
