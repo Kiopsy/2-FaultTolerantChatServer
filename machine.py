@@ -208,23 +208,6 @@ class Machine(ChatServiceServicer):
             self.sprint("*Rejected commit")
 
         return approved
-    
-    # def parse_commit(self, commit) -> None:
-
-
-    # def write_commit(self, state, message_lst) -> str:
-    #     match state:
-    #         case 1: # Register
-    #             return f"{}"
-    #         case 2: # 
-    #             return f""
-
-    # 1: db [passwords or messages]
-    # divider
-    # 2: add or delete
-    # divider
-    # 3: what is being added
-
 
     # func "write_to_log": writes a commit to the log file
     def write_to_log(self, commit, ballot_id):

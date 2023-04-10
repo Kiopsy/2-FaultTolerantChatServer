@@ -5,6 +5,7 @@ import chat_service_pb2_grpc as chat_service_pb2_grpc
 from machine import Machine
 
 NUM_SERVERS = 3
+connection_wait_time = 3
 
 # func "random_commits": machine randomly proposes 5 commits in  
 # TESTING: potentially simultaneous commit proposals
@@ -24,7 +25,7 @@ def serve(id):
 
     machine.sprint(f"Server initialized at {machine.HOST} on port {machine.PORT}")
 
-    time.sleep(3)
+    time.sleep(connection_wait_time)
     machine.connect()
     machine.heartbeat_thread.start()
     server.wait_for_termination()
@@ -85,27 +86,34 @@ def sigint_handler(signum, frame):
 
 
 if __name__ == '__main__':
+
+
+    if len(sys.argv) == 2:
+        machine_id = int(sys.argv[1])
+        connection_wait_time = 5
+        serve(machine_id)
+    else:
+        processes = create_processes()
+
+        signal.signal(signal.SIGINT, sigint_handler)
+
+        start_processes(processes)
+
+        # ## TEST kill revive
+        # for i in range(5):
+        #     time.sleep(8)
+        #     try:
+        #         kill_revive(processes)
+        #     except EOFError:
+        #         sys.exit(0)
+
+        # ## TEST random commits
+        # for _ in range(5):
+        #     time.sleep(8)
+        #     try:
+        #         input("Start random commits: ")
+        #         random_commits()
+        #     except EOFError:
+        #         sys.exit(0)
     
-    processes = create_processes()
-
-    signal.signal(signal.SIGINT, sigint_handler)
-
-    start_processes(processes)
-
-    # ## TEST kill revive
-    # for i in range(5):
-    #     time.sleep(8)
-    #     try:
-    #         kill_revive(processes)
-    #     except EOFError:
-    #         sys.exit(0)
-
-    # ## TEST random commits
-    # for _ in range(5):
-    #     time.sleep(8)
-    #     try:
-    #         input("Start random commits: ")
-    #         random_commits()
-    #     except EOFError:
-    #         sys.exit(0)
-        
+            
