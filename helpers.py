@@ -2,7 +2,7 @@ import threading, grpc, chat_service_pb2_grpc, chat_service_pb2
 from concurrent import futures
 
 
-SERVER_IPS = {50050: "10.250.174.43", 50051: "10.250.78.119", 50052: "10.250.78.119"}
+SERVER_IPS = {50050: "10.250.78.119", 50051: "10.250.78.119", 50052: "10.250.78.119"}
 
 class TwoFaultStub:
     def __init__(self):

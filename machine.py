@@ -93,11 +93,15 @@ class Machine(ChatServiceServicer):
 
                     self.peer_alive[port] = True
                 except Exception as e:
-                    self.sprint("Received Error:", e)
+                    self.sprint("Received Error:", e.details())
                     self.peer_alive[port] = False
 
-            self.connected = True
+            
 
+        if self.primary_port == -1:
+            self.leader_election()
+            
+        self.connected = True
         self.sprint("Connected", self.peer_alive)
         return self.connected
 
@@ -142,9 +146,6 @@ class Machine(ChatServiceServicer):
     
     # func "receive_heartbeat": ask all other machines if they are alive by asking of
     def receive_heartbeat(self) -> None:
-        # elect leading machine if none
-        if self.primary_port == -1:
-            self.leader_election()
 
         # every HEARTRATE seconds, ask for all heartbeats
         while not self.stop_event.is_set():
@@ -153,7 +154,7 @@ class Machine(ChatServiceServicer):
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
                     if self.peer_alive[response.port] == False:
-                        self.sprint(f"{response.port} is back online", self.peer_alive)
+                        self.sprint(f"{response.port} is back online")
                     self.peer_alive[response.port] = True
                 except:
                     # if cannot connect to a peer, mark it as dead
