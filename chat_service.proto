@@ -5,9 +5,25 @@ syntax = "proto3";
 package chat;
 
 service ChatService {
+  rpc Ping (Empty) returns (Empty) {}
+
+  // Connection functions
+  rpc Alive (Empty) returns (ReviveInfo) {}
   rpc RequestHeartbeat (Empty) returns (HeartbeatResponse) {}
-//   rpc ReceiveMessage (User) returns (stream ChatMessage) {}
-//   rpc GetUsers (Empty) returns (stream User) {}
+
+  // Voting functions
+  rpc ProposeCommit (CommitRequest) returns (CommitVote) {}
+  rpc SendVoteResult (CommitVote) returns (Empty) {}
+
+
+  rpc Addition (TwoNumbers) returns (Sum) {}
+}
+
+message ReviveInfo {
+  int64 primary_port = 1;
+  string commit_log = 2;
+  bytes db_bytes = 3;
+  bool updates = 4;
 }
 
 message Empty {}
@@ -15,6 +31,26 @@ message Empty {}
 message HeartbeatResponse {
   int64 port = 1;
   bool primary = 2;
+}
+
+message CommitRequest {
+  string commit = 1;
+  int64 ballot_id = 2;
+}
+
+message CommitVote {
+  bool approve = 1;
+  string commit = 2;
+  int64 ballot_id = 3;
+}
+
+message TwoNumbers {
+  int64 a = 1;
+  int64 b = 2;
+}
+
+message Sum {
+  int64 sum = 1;
 }
 
 
