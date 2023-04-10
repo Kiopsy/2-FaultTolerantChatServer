@@ -27,7 +27,6 @@ def serve(id):
     time.sleep(3)
     machine.connect()
     machine.heartbeat_thread.start()
-    # random_commits(machine)
     server.wait_for_termination()
 
 # func "create_processes": creates a list of processes that serve machines; None -> List[Process]
@@ -50,11 +49,12 @@ def start_processes(processes: list[multiprocessing.Process]) -> None:
 # TESTING: kill and revive functionality
 def kill_revive(processes: list[multiprocessing.Process]) -> None:
     choices = input("Which process id(s) should die: ")
-    choices = choices.split(", ")
-    choices = [int(c) for c in choices]
 
-    # killing processes
     if choices:
+        choices = choices.split(", ")
+        choices = [int(c) for c in choices]
+
+        # killing processes
         for c in choices:
             processes[c].terminate()
             for _ in range(3):
@@ -63,11 +63,12 @@ def kill_revive(processes: list[multiprocessing.Process]) -> None:
     time.sleep(8)
 
     # reviving processes
-    choices = input("Which process id(s) should be revived {choices}: ")
-    choices = choices.split(", ")
-    choices = [int(c) for c in choices]
+    choices = input(f"Which process id(s) should be revived {choices}: ")
 
     if choices:
+        choices = choices.split(", ")
+        choices = [int(c) for c in choices]
+        
         for c in choices:
             multiprocessing.Process(target=serve, args=(c, )).start()
 
@@ -91,8 +92,20 @@ if __name__ == '__main__':
 
     start_processes(processes)
 
+    # ## TEST kill revive
     # for i in range(5):
     #     time.sleep(8)
-    #     kill_revive(processes)
-    
-    
+    #     try:
+    #         kill_revive(processes)
+    #     except EOFError:
+    #         sys.exit(0)
+
+    # ## TEST random commits
+    # for _ in range(5):
+    #     time.sleep(8)
+    #     try:
+    #         input("Start random commits: ")
+    #         random_commits()
+    #     except EOFError:
+    #         sys.exit(0)
+        

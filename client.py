@@ -1,9 +1,6 @@
-import grpc
+import grpc, time, random, threading, socket
 import chat_service_pb2
 import chat_service_pb2_grpc
-import threading
-import time
-import random
 
 HOST = "localhost"
 MESSAGE_RATE = 3
@@ -30,21 +27,24 @@ class Client:
                 pass
 
     def sendAddition(self):
-        while self.connected:
-            a = int(input("A: "))
-            b = int(input("B: "))
+        try:
+            while self.connected:
+                a = int(input("A: "))
+                b = int(input("B: "))
 
-            while True:
-                try:
-                    numbers = chat_service_pb2.TwoNumbers(a=a, b=b)
-                    sum = self.stub.Addition(numbers).sum
+                while True:
+                    try:
+                        numbers = chat_service_pb2.TwoNumbers(a=a, b=b)
+                        sum = self.stub.Addition(numbers).sum
 
-                    print(f"Server finished our addition request: {sum}")
-                    break
-                except Exception as e:
-                    # handle the exception and print the error message
-                    print(f"An error occurred")
-                    self.connect()
+                        print(f"Server finished our addition request: {sum}")
+                        break
+                    except Exception as e:
+                        # handle the exception and print the error message
+                        print(f"An error occurred")
+                        self.connect()
+        except KeyboardInterrupt:
+            print("Exiting...")
 
 
 if __name__ == '__main__':
