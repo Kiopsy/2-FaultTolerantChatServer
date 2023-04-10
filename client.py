@@ -2,7 +2,7 @@ import grpc, time, random, threading, socket
 import chat_service_pb2
 import chat_service_pb2_grpc
 
-HOST = socket.gethostbyname(socket.gethostname())
+HOST = "localhost"
 MESSAGE_RATE = 3
 
 class Client:
