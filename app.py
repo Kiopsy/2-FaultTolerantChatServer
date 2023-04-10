@@ -11,7 +11,7 @@ class Application(tk.Tk):
 
     def __init__(self):
         """
-        Initializes our application with a client object. Starts at the connect page.
+        Initializes our application with a client object. Starts at the login page.
         """
         tk.Tk.__init__(self)
         self._frame = None

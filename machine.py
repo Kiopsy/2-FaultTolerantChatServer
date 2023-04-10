@@ -93,14 +93,12 @@ class Machine(ChatServiceServicer):
 
                     self.peer_alive[port] = True
                 except Exception as e:
-                    self.sprint("Received Error:", e.details())
+                    self.sprint("Received Error in Connect:", e)
                     self.peer_alive[port] = False
-
-            
 
         if self.primary_port == -1:
             self.leader_election()
-            
+
         self.connected = True
         self.sprint("Connected", self.peer_alive)
         return self.connected
@@ -123,10 +121,16 @@ class Machine(ChatServiceServicer):
     # rpc func "Alive": takes in Empty and returns updates (if it is the primary machine) or no updates
     def Alive(self, request, context):
         if self.primary_port == self.PORT:
-            with open(self.LOG_FILE_NAME, 'r') as file:
-                text_data = file.read()
-            with open(self.db.filename, 'rb') as dbfile:
-                db_bytes = pickle.dumps(pickle.load(dbfile))
+
+            try:
+                with open(self.LOG_FILE_NAME, 'r') as file:
+                    text_data = file.read()
+                with open(self.db.filename, 'rb') as dbfile:
+                    db_bytes = pickle.dumps(pickle.load(dbfile))
+            except:
+                text_data = ""
+                db_bytes = bytes()
+
             return chat_service_pb2.ReviveInfo(
                 primary_port = self.primary_port, 
                 commit_log = text_data, 
@@ -147,10 +151,11 @@ class Machine(ChatServiceServicer):
     # func "receive_heartbeat": ask all other machines if they are alive by asking of
     def receive_heartbeat(self) -> None:
 
-        # every HEARTRATE seconds, ask for all heartbeats
-        while not self.stop_event.is_set():
-            time.sleep(HEARTRATE)
-            for port, stub in self.peer_stubs.items():
+        def individual_heartbeat(port):
+            # every HEARTRATE seconds, ask given port for heartbeats
+            stub = self.peer_stubs[port]
+            while not self.stop_event.is_set():
+                time.sleep(HEARTRATE)
                 try:
                     response : chat_service_pb2.HeartbeatResponse = stub.RequestHeartbeat(chat_service_pb2.Empty())
                     if self.peer_alive[response.port] == False:
@@ -159,11 +164,14 @@ class Machine(ChatServiceServicer):
                 except:
                     # if cannot connect to a peer, mark it as dead
                     if self.peer_alive[port]:
-                        self.sprint(f"Heartbeat not received from port {port}", self.peer_alive)
+                        self.sprint(f"Heartbeat not received from port {port}")
                     self.peer_alive[port] = False
                     if self.primary_port == port: # run an election if the primary has died 
                         self.leader_election()
-    
+
+        for port in self.peer_stubs:
+            threading.Thread(target = individual_heartbeat, args=(port, ), daemon=True).start()
+
     # func "stop_machine": stop the machine's heartbeat by setting stop_event
     def stop_machine(self):
         self.stop_event.set() 
@@ -192,6 +200,8 @@ class Machine(ChatServiceServicer):
                 response : chat_service_pb2.CommitVote = stub.ProposeCommit(req)
                 approved &= response.approve
             except:
+                self.sprint(port, "died when voting; vote rejected")
+                approved = False
                 self.peer_alive[port] = False
 
         # sends the result of the vote to all living peers
@@ -201,6 +211,7 @@ class Machine(ChatServiceServicer):
             try:
                 stub.SendVoteResult(vote)
             except:
+                self.sprint(port, "died when confirming vote")
                 self.peer_alive[port] = False
 
         # commits changes if vote was approved
@@ -388,7 +399,6 @@ class Machine(ChatServiceServicer):
         if not success:
             return chat_service_pb2.SendResponse(success=False, message='Server rejected this request')
 
-        print(f"Received message from {sender} to {recipient}: {content}")
         self.db.get_db()["messages"][recipient].append(request)
         self.db.store_data()
         
