@@ -1,12 +1,9 @@
-# cs262-design-exercise3
+# Replication
 
 ## Installation
 Clone the repository
 ```bash
 git clone https://github.com/jared-ni/cs262-design-exercise3.git
-```
-```bash
-pip install -r requirements.txt 
 ```
 
 ## Setting up Servers and Clients
