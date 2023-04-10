@@ -159,9 +159,9 @@ class Machine(ChatServiceServicer):
             req = chat_service_pb2.CommitRequest(commit = commit, ballot_id = ballot_id)
             try:
                 response : chat_service_pb2.CommitVote = stub.ProposeCommit(req)
+                approved &= response.approve
             except:
                 self.peer_alive[port] = False
-            approved &= response.approve
 
         # sends the result of the vote to all living peers
         for stub, port in living_stubs():
