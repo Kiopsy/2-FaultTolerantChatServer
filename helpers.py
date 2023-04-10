@@ -14,9 +14,7 @@ class TwoFaultStub:
             try:
                 channel = grpc.insecure_channel(host + ':' + str(port)) 
                 self.stub = chat_service_pb2_grpc.ChatServiceStub(channel)
-
-                if not channel._channel.is_active():
-                    raise Exception
+                self.stub.Ping(chat_service_pb2.Empty())
 
                 print(f"Client connected to machine w/ port {port}")
                 return True
@@ -71,4 +69,3 @@ class ThreadSafeSet:
     def __iter__(self):
         with self._lock:
             return iter(self._set)
-        
