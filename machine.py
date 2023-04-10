@@ -379,7 +379,7 @@ class Machine(ChatServiceServicer):
         # Store message in db and return success code
         # do extra shit for this one
         
-        state_str = f"request = chat_service_pb2.SendRequest(sender = '{sender}', recipient = '{recipient}', content = '{content}'){DIVIDER}self.db.get_db()['messages']['{recipient}'].append(request)"
+        state_str = f"self.db.get_db()['messages']['{recipient}'].append(chat_service_pb2.SendRequest(sender = '{sender}', recipient = '{recipient}', content = '{content}'))"
         success = self.vote_on_client_request(state_str)
         if not success:
             return chat_service_pb2.SendResponse(success=False, message='Server rejected this request')
@@ -407,12 +407,14 @@ class Machine(ChatServiceServicer):
 
         # Retrieve all messages made to a recipient, deleting as we go. 
         # Loop in reverse order to maintain order messages were received.
-        for i in range(len(self.db.get_db()["messages"][recipient]) - 1, -1, -1): 
-            message = self.db.get_db()["messages"][recipient][i]
+        if len(self.db.get_db()["messages"][recipient]) > 0:
+            message = self.db.get_db()["messages"][recipient][-1]
 
             state_str = f"self.db.get_db()['messages']['{recipient}'].pop()"
             success = self.vote_on_client_request(state_str)
             if success:
-                yield chat_service_pb2.ChatMessage(sender = message.sender, content = message.content)
                 self.db.get_db()["messages"][recipient].pop()
                 self.db.store_data()
+                return chat_service_pb2.ChatMessage(sender = message.sender, content = message.content)
+        
+        return chat_service_pb2.ChatMessage(sender = "")

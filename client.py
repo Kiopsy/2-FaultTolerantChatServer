@@ -28,8 +28,15 @@ class Client:
         """
         Retrieve messages from the server/stub associated with our current user 
         """
-        messageObjs = self.stub.ReceiveMessage(chat_service_pb2.User(username = self.username))
-        return messageObjs
+        # messageObjs = self.stub.ReceiveMessage(chat_service_pb2.User(username = self.username))
+        
+        
+        message = self.stub.ReceiveMessage(chat_service_pb2.User(username = self.username))
+
+        if message.sender == "":
+            return []
+        
+        return [message]
 
     def send_message(self, recipient, content):
         """

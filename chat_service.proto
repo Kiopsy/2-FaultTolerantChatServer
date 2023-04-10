@@ -19,7 +19,7 @@ service ChatService {
 
   // -> Chat functionality
   rpc SendMessage (SendRequest) returns (SendResponse) {}
-  rpc ReceiveMessage (User) returns (stream ChatMessage) {}
+  rpc ReceiveMessage (User) returns (ChatMessage) {}
   rpc GetUsers (Empty) returns (stream User) {}
 
   // -> Auth functionality

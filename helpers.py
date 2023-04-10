@@ -3,7 +3,7 @@ import chat_service_pb2_grpc as chat_service_pb2_grpc
 import chat_service_pb2 as chat_service_pb2
 
 
-SERVER_IPS = {50050: "", 50051: "", 50052: ""}
+SERVER_IPS = {50051: "10.250.78.119", 50050: "10.250.174.43", 50052: "10.250.78.119"}
 
 class TwoFaultStub:
     def __init__(self):
@@ -21,7 +21,7 @@ class TwoFaultStub:
                 print(f"Client connected to machine w/ port {port}")
                 return True
             except:
-                print("Could not connect")
+                print(f"Could not connect to {host}:{port}")
         
         return False
     
