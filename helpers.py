@@ -2,12 +2,13 @@ import threading, grpc
 import chat_service_pb2_grpc as chat_service_pb2_grpc
 import chat_service_pb2 as chat_service_pb2
 
-HOST = "localhost"
+
+SERVER_IPS = {50050: "", 50051: "", 50052: ""}
 
 class TwoFaultStub:
     def __init__(self):
         self.stub = None
-        self.SERVERS = {50050: HOST, 50051: HOST, 50052: HOST}
+        self.SERVERS = SERVER_IPS
 
     def connect(self) -> bool:
         for port, host in self.SERVERS.items():

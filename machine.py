@@ -2,12 +2,11 @@ import os, grpc, time, threading, socket, pickle
 import chat_service_pb2 as chat_service_pb2
 from chat_service_pb2_grpc import ChatServiceServicer, ChatServiceStub, add_ChatServiceServicer_to_server
 from concurrent import futures
-from helpers import ThreadSafeSet
+from helpers import ThreadSafeSet, SERVER_IPS
 from database import Database
 
 LOGS_DIR = "logs"
 PKL_DIR = "pickles"
-HOST = "localhost"
 HEARTRATE = 1
 MAX_VOTE_ATTEMPTS = 5
 DIVIDER = "#%$%^&%&^%&*^"
@@ -34,11 +33,11 @@ class Machine(ChatServiceServicer):
         self.SILENT = silent
 
         # initialize channel constants
-        self.HOST = HOST # change later to: socket.gethostbyname(socket.gethostname())
+        self.HOST = socket.gethostbyname(socket.gethostname())
         self.PORT = 50050 + self.MACHINE_ID
 
         # dict of the other servers' ports -> their host/ips
-        self.PEER_PORTS : dict[int, str] = {50050: HOST, 50051: HOST, 50052: HOST} # change "HOST" when we want to use other devices
+        self.PEER_PORTS : dict[int, str] = SERVER_IPS # change "HOST" when we want to use other devices
         del self.PEER_PORTS[self.PORT]
 
         # dict of the other servers' ports -> bool determining if they are alive
