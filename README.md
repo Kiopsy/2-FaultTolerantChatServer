@@ -1,67 +1,50 @@
-# Replication
+# Replication Design Exercise
+
+Emeka Ezike & Victor Goncalves
+
+[Engineering Notebook](https://docs.google.com/document/d/1S5sMQA5DNpH07CbEVKX_twklYyqPWQBLZ0j0jc64Uks/edit?usp=sharing)
 
 ## Installation
 Clone the repository
 ```bash
-git clone https://github.com/jared-ni/cs262-design-exercise3.git
+git clone https://github.com/Kiopsy/Replication.git
 ```
 
 ## Setting up Servers and Clients
-cd into the repository, then cd into the chat directory.
-For each of the 3 servers, run the server by typing:
+
+In helpers.py, make sure to set the IP/HOST of each respective server before starting.
+
+For example, servers with IDs = 0, 1, 2 have the respective IP's:
 ```bash
-python server.py <port>
+SERVER_IPS = {50050: "10.250.78.119", 50051: "10.250.174.43", 50052: "10.250.78.119"}
 ```
-where <port> is the port that you want to server to connect on, and follow instructions to correctly set up this replica with other replicas.
+
+To run the servers, splitting the server between different machines/terminals, you can run (where id = 0, 1, or 2).
+```bash
+python server.py id
+```
+Or to run all servers in the same terminal using multiprocessing, you can run:
+```bash
+python server.py
+```
+
 Then, run the corresponding client:
 ```bash
 python client.py
 ```
-and follow the instructions to set up the connection to the server accordingly.
-If multiple clients want to connect, repeat the above step in another terminal.
+and a GUI will pop up. Follow the steps there accordingly. 
+If multiple clients want to connect, repeat the above step in another terminal (make sure the IPs are stated accordingly in the helpers.py file).
 
 ## Navigating the Chat App
-The process when first connecting to the chat app as a client is intuitive and follows that of any other chat app (Messenger, WhatsApp, etc.)
-Once the client connects to the server, the chat app prompts you to register for a user. If the client already is a 
-registered user, then it can simply type "no". Then, chat app then prompts you to log in. Once logged in, the user receives any unseen messages sent to them while they were logged out and has the ability to access the main functionalities of the app.
+Ensure to login/register for an account (where duplicate accounts cannot exist). When you proceed to the homepage, you can send messages to other users who have created an account. If a user exists, but is not showing up on the dropdown, make sure to reset options to query the database from the server again. 
 
-Now, the user can assess various functionalities by typing:
-
-**\<username\>: \<message\>**: sends \<message\> to \<username\> if \<username\> exists; sends immediately if \<username\> is logged on, else queues the message on the server.
-
-**./register**: registers another user
-
-**./login**: logs in another user
-
-__./list *__: lists all users registered in the server; * is the text wildcard
-
-**./delete \<username\>**: deletes \<username\> from server (prompts for \<username\> password)
-
-**./disconnect**: logs user out (if logged in) and disconnects client, ending session
-
-**./help**: lists these above commands in case user forgets
-
-If the user receives a message from another user, it will show up on the user's 
-terminal in the format **([\<username\>] \<message\>)**.
-
+## Fault Tolerance
+To test fault-tolerance, you can shut down the servers by pressing ctrl-c if they are running in separate terminals. The server with the lowest ID will be chosen as the leader using the Bully Algorithm. In case you are using multiprocessing, you can test fault-tolerance by removing the comment from the "TEST kill revive" section in server.py. This will enable you to enter the server you want to shut down as input, and it will restart after a few seconds. Our application allows servers to rejoin, and they will automatically reconnect with each other, which might trigger another round of leader election.
 
 ## Running Unit Tests
 For running unit testts,s open up a terminal and nagivate to the 
 directory containing server.py and client.py. Start the servers by typing
 ```bash
-python server.py 12350
+python unit_tests.py
 ```
-```bash
-python server.py 12351
-```
-```bash
-python server.py 12352
-```
-as the unit tests were written with the server ports being 12345, 12346, and 12347.
-
-Now, open up another terminal and nagivate to the same directory and type
-```bash
-python -m unittest client.py
-```
-This will run all unit tests, testing individual functions of client.py and making
-sure that messages are sent correctly from client to server to client.
+This will run all unit tests, and will print success/error for each test upon completion.
