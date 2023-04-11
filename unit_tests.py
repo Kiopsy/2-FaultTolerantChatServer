@@ -101,25 +101,6 @@ class TestMachine(unittest.TestCase):
             t.join()
 
         print("testReconnect passed")
-    
-    def testCommitProposal(self) -> None:
-        # # Create all machines
-        # machines = [Machine(i, True) for i in range(3)]
-
-        # # Serve machines and connect them
-        # for m in machines: 
-        #     threading.Thread(target = serve, args=(m,)).start()
-
-        pass
-
-    def testCommitLogConsistency(self) -> None: 
-        pass
-
-    def testLeaderElection(self) -> None:
-        pass
-
-    def testRevive(self) -> None:
-        pass
 
 if __name__ == '__main__':
     print("Begining unit tests...")
