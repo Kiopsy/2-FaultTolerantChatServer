@@ -16,6 +16,7 @@ def serve(machine, server):
 class TestMachine(unittest.TestCase):
 
     def testInitialization(self) -> None:
+        # Create machines and test their port settings and IDs
         machine1 = Machine(0, True)
         machine2 = Machine(1, True)
         machine3 = Machine(2, True)
@@ -33,56 +34,70 @@ class TestMachine(unittest.TestCase):
         print("testInitialization passed")
 
     def testConnection(self) -> None:
-        # Create all machines
+        # Create all machines & servers
         servers = [grpc.server(futures.ThreadPoolExecutor(max_workers=10)) for _ in range(3)]
         machines = [Machine(i, True) for i in range(3)]
 
+        # Start the each in their own thread
         threads = [threading.Thread(target = serve, args=(machines[i], servers[i])) for i in range(3)]
-
         for t in threads:
             t.start()
 
-        time.sleep(2)
+        # Sleep to give time for machines to connect
+        time.sleep(3)
 
         # Ensure all machines are connected and have selected 50050 as a leader
         for m in machines:
             self.assertTrue(m.connected)
             self.assertTrue(all(m.peer_alive.values()))
             self.assertEqual(m.primary_port, 50050)
-        
+
+        # Stop machines and servers before closing
+        for s, m in zip(servers, machines):
+            s.stop(grace=1)
+            m.stop_event.set()
+
         for t in threads:
             t.join()
 
         print("testConnection passed.")
 
     def testReconnect(self) -> None:
-        # Create all machines
+        # Create all machines & servers
         servers = [grpc.server(futures.ThreadPoolExecutor(max_workers=10)) for _ in range(3)]
         machines = [Machine(i, True) for i in range(3)]
 
-        # Serve and connect all the machines
+        # Start the each in their own thread
         threads = [threading.Thread(target = serve, args=(machines[i], servers[i])) for i in range(3)]
-
         for t in threads:
             t.start()
 
-        time.sleep(2) 
+        # Sleep to give time for machines to connect
+        time.sleep(4)
 
-        # Ensure all machines have same leader elected
+        # Ensure all machines are connected and have selected 50050 as a leader
         for m in machines:
-            self.assertEquals(m.primary_port, 50050)
+            self.assertTrue(m.connected)
+            self.assertTrue(all(m.peer_alive.values()))
+            self.assertEqual(m.primary_port, 50050)
 
-        # Disconnect the leader machine
+        # Disconnect the leader machine & server
         machines[0].stop_machine()
-        time.sleep(1)
+        servers[0].stop(grace=1)
+        
+        # Give time for machines to re-elect
+        time.sleep(4)
 
         # Ensure that other machines reelect a leader
         for m in machines[-2:]:
             self.assertEquals(m.primary_port, 50051)
 
-        
+        # Stop machines and servers before closing
+        for s, m in zip(servers, machines):
+            s.stop(grace=1)
+            m.stop_event.set()
 
-        for t in threads: 
+        for t in threads:
             t.join()
 
         print("testReconnect passed")

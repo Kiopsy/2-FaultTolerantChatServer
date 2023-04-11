@@ -37,7 +37,7 @@ class Machine(ChatServiceServicer):
         self.PORT = 50050 + self.MACHINE_ID
 
         # dict of the other servers' ports -> their host/ips
-        self.PEER_PORTS : dict[int, str] = SERVER_IPS # change "HOST" when we want to use other devices
+        self.PEER_PORTS : dict[int, str] = SERVER_IPS.copy() # change "HOST" when we want to use other devices
         del self.PEER_PORTS[self.PORT]
 
         # dict of the other servers' ports -> bool determining if they are alive
