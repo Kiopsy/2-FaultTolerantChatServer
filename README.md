@@ -9,11 +9,11 @@ Clone the repository
 ```bash
 git clone https://github.com/Kiopsy/Replication.git
 ```
- Ensure that the most recent version of Python is downloaded [here](https://www.python.org/downloads/)
- Ensure that gRPC is downloaded for Python using the following commands
+- Ensure that the most recent version of Python is downloaded [here](https://www.python.org/downloads/)
+- Ensure that gRPC is downloaded for Python using the following commands
 	 - pip install grpcio
 	 - pip install grpcio-tools
- We use Tkinter for the GUI, so download it with the following command:
+- We use Tkinter for the GUI, so download it with the following command:
 	 - pip install tk
 
 ## Setting up Servers and Clients
